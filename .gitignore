@@ -14,9 +14,6 @@ dist/
 .AppleDouble
 .LSOverride
 
-# JetBrains IDE
-.idea/
-
 # Claude Code
 .claude/
 
@@ -34,8 +31,3 @@ reports/
 # Failure log
 failures.json
 
-# Python remnants (from prior migration)
-venv/
-__pycache__/
-*.pyc
-.pytest_cache/
