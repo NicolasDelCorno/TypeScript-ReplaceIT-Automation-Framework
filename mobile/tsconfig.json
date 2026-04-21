@@ -1,0 +1,12 @@
+{
+  "extends": "../tsconfig.json",
+  "compilerOptions": {
+    "lib": ["ES2020", "DOM"],
+    "types": ["@wdio/globals/types", "mocha"],
+    "rootDir": ".."
+  },
+  "include": [
+    "../mobile/**/*.ts"
+  ],
+  "exclude": ["../node_modules", "../dist", "../src", "../tests"]
+}

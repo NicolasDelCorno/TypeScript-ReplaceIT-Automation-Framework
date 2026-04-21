@@ -1,0 +1,49 @@
+name: Web Tests (Chromium)
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  web-tests:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright browsers
+        run: npx playwright install chromium --with-deps
+
+      - name: Run web tests
+        env:
+          BASE_URL: https://replaceit.ai
+          HEADLESS: "1"
+        run: npx playwright test --project=chromium
+
+      - name: Upload test report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: web-test-report
+          path: reports/
+          retention-days: 14
+
+      - name: Upload failures.json
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: failures-json
+          path: failures.json
+          retention-days: 14

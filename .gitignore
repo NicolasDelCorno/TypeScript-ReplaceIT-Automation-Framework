@@ -1,0 +1,41 @@
+# Node
+node_modules/
+npm-debug.log*
+
+# TypeScript build output
+dist/
+*.js.map
+
+# Environment variables
+.env
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# JetBrains IDE
+.idea/
+
+# Claude Code
+.claude/
+
+# Personal notes
+Notes/
+TEST_CASES.md
+
+# Playwright
+playwright-report/
+test-results/
+
+# Generated test artifacts (screenshots, videos, HTML reports)
+reports/
+
+# Failure log
+failures.json
+
+# Python remnants (from prior migration)
+venv/
+__pycache__/
+*.pyc
+.pytest_cache/
