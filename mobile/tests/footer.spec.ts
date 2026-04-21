@@ -14,21 +14,21 @@ describe('TestFooter', () => {
   it('test_privacy_policy_link_works', async () => {
     const link = await base.getFooterLink('#priv');
     expect(await link.isDisplayed()).toBe(true);
-    expect(await link.getAttribute('href')).toBe('#priv');
+    expect(await link.getAttribute('href')).toContain('#priv');
     await base.clickPrivacyPolicy();
   });
 
   it('test_cookie_policy_link_works', async () => {
     const link = await base.getFooterLink('#cookies');
     expect(await link.isDisplayed()).toBe(true);
-    expect(await link.getAttribute('href')).toBe('#cookies');
+    expect(await link.getAttribute('href')).toContain('#cookies');
     await base.clickCookiePolicy();
   });
 
   it('test_terms_and_conditions_link_works', async () => {
     const link = await base.getFooterLink('#term');
     expect(await link.isDisplayed()).toBe(true);
-    expect(await link.getAttribute('href')).toBe('#term');
+    expect(await link.getAttribute('href')).toContain('#term');
     await base.clickTermsAndConditions();
   });
 

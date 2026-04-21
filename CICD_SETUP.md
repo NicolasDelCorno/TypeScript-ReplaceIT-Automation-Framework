@@ -37,29 +37,23 @@ Uses a GitHub-hosted Ubuntu runner, which is the standard environment for headle
 #### 1. Checkout Code
 Pulls the repository code into the runner using the official `actions/checkout@v4` action.
 
-#### 2. Set Up Python
-Installs Python 3.10 (matching the project's minimum requirement) with pip caching enabled to speed up repeated runs.
+#### 2. Set Up Node.js
+Installs Node.js (with npm caching) using the official `actions/setup-node@v4` action.
 
 #### 3. Install Dependencies
-Runs `pip install -r requirements.txt` to install all project dependencies including pytest, pytest-playwright, and pytest-html.
+Runs `npm ci` to install dependencies exactly as pinned in `package-lock.json`.
 
 #### 4. Install Playwright Chromium
 ```bash
-python -m playwright install chromium --with-deps
+npx playwright install chromium --with-deps
 ```
-Installs only the Chromium browser binary. The `--with-deps` flag also installs the Linux system libraries (fonts, codecs, etc.) required for headless Chrome to run on Ubuntu.
-
-Firefox and WebKit are intentionally skipped to keep the pipeline fast and focused.
+Installs only the Chromium browser binary. The `--with-deps` flag also installs the Linux system libraries (fonts, codecs, etc.) required for headless Chromium to run on Ubuntu.
 
 #### 5. Run Web Tests
 ```bash
-pytest tests/ --pw-browser=chromium --html=reports/web-report.html
+npx playwright test --project=chromium
 ```
-- Targets the `tests/` directory only (web tests)
-- Forces Chromium as the browser
-- `HEADLESS=1` ensures no display is required
-- `BASE_URL` points to the live site at `https://replaceit.ai`
-- Generates an HTML report via `pytest-html`
+- Targets the `tests/` directory (web suite)\n+- Forces Chromium as the browser via the Playwright project\n+- `HEADLESS=1` runs the browser without a display (required in CI)\n+- `BASE_URL` can be pointed to production or staging
 
 #### 6. Upload Test Report
 ```yaml
@@ -84,6 +78,6 @@ After each run, the following are available for download in the GitHub Actions U
 
 ## Extending the Pipeline
 
-To add more browsers in the future, duplicate the `Run web tests` step and change `--pw-browser` to `firefox` or `webkit`, then add a corresponding `playwright install` step for that browser.
+To add more browsers in the future, add new Playwright projects in `playwright.config.ts` and run them via `--project=<name>`. Then install the corresponding browser binaries (e.g. `npx playwright install firefox --with-deps`).
 
 To run against a staging environment instead of production, update `BASE_URL` to your staging URL or store it as a GitHub Actions secret and reference it with `${{ secrets.BASE_URL }}`.

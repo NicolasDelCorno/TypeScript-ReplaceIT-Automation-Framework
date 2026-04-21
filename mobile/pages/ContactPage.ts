@@ -45,8 +45,15 @@ export class ContactPage extends BasePage {
 
   async getSuccessBanner(): Promise<WebdriverIO.Element> {
     const selector = `//*[contains(normalize-space(),'${ContactPage.SUCCESS_BANNER_KEYWORD}')]`;
+    await browser.waitUntil(
+      async () => (await $$(selector)).length > 0,
+      {
+        timeout: 20000,
+        interval: 500,
+        timeoutMsg: `Success banner not found: ${selector}`,
+      }
+    );
     const el = (await $(selector)) as unknown as WebdriverIO.Element;
-    await el.waitForExist({ timeout: 20000 });
     await this.scrollTo(selector);
     await el.waitForDisplayed({ timeout: 20000 });
     return el;

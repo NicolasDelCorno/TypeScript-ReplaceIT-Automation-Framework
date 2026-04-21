@@ -1,8 +1,15 @@
-import { ServicesPage, EXPECTED_SERVICES_IOS } from '../pages/ServicesPage';
+import { ServicesPage, EXPECTED_SERVICES_ANDROID, EXPECTED_SERVICES_IOS } from '../pages/ServicesPage';
 
 const BASE_URL = (process.env.BASE_URL ?? 'https://replaceit.ai').replace(/\/$/, '');
 const PLATFORM = (process.env.PLATFORM ?? 'ios').toLowerCase();
-const EXPECTED_SERVICES = EXPECTED_SERVICES_IOS;
+const EXPECTED_SERVICES = PLATFORM === 'android' ? EXPECTED_SERVICES_ANDROID : EXPECTED_SERVICES_IOS;
+
+function normalizeLabel(s: string): string {
+  return s
+    .replace(/\s+/g, ' ')
+    .trim()
+    .toLowerCase();
+}
 
 describe('TestServicesPage', () => {
   let services: ServicesPage;
@@ -18,8 +25,9 @@ describe('TestServicesPage', () => {
 
   it('test_all_service_cards_present', async () => {
     const headings = await services.getServiceHeadings();
+    const normalizedHeadings = headings.map(normalizeLabel);
     for (const service of EXPECTED_SERVICES) {
-      expect(headings).toContain(service);
+      expect(normalizedHeadings).toContain(normalizeLabel(service));
     }
   });
 

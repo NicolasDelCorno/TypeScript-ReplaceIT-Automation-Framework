@@ -29,13 +29,13 @@ BASE_URL=https://replaceit.ai
 
 ## 2) Web (Playwright) suite
 
-### Run all web tests — all browsers (headless)
+### Run all web tests — Chromium only (headless)
 
 ```bash
 npm run test:web
 ```
 
-### Run all web tests — all browsers (headed)
+### Run all web tests — Chromium only (headed)
 
 ```bash
 npm run test:web:headed
@@ -59,12 +59,10 @@ npx playwright test tests/contact.spec.ts
 npx playwright test -g "logo is visible"
 ```
 
-### Cross-browser smoke (web)
+### Chromium smoke (web)
 
 ```bash
 npx playwright test tests/quality-gates.spec.ts --project=chromium
-npx playwright test tests/quality-gates.spec.ts --project=firefox
-npx playwright test tests/quality-gates.spec.ts --project=webkit
 ```
 
 ---

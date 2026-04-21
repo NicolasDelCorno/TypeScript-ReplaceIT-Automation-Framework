@@ -1,10 +1,9 @@
 import { test as base, expect } from '@playwright/test';
-import type { Page, TestInfo } from '@playwright/test';
+import type { TestInfo } from '@playwright/test';
 import * as fs from 'fs';
 import * as path from 'path';
 
 const SCREENSHOTS_DIR = 'reports/screenshots/web';
-const VIDEOS_DIR = 'reports/videos/web';
 
 export const TC_MAP: Record<string, string> = {
   // 1. Navigation
@@ -77,10 +76,7 @@ export const test = base.extend<WebFixtures>({
     await use(tcFromInfo(testInfo));
   },
 
-  page: async ({ page, baseURL }, use, testInfo) => {
-    if (baseURL) {
-      await page.goto(baseURL);
-    }
+  page: async ({ page }, use, testInfo) => {
     await use(page);
 
     const tc = tcFromInfo(testInfo);
@@ -89,17 +85,12 @@ export const test = base.extend<WebFixtures>({
     fs.mkdirSync(SCREENSHOTS_DIR, { recursive: true });
     const screenshotPath = path.join(SCREENSHOTS_DIR, `PIC-${tc}-${ts}.png`);
     try {
-      await page.screenshot({ path: screenshotPath, fullPage: true });
+      await page.screenshot({
+        path: screenshotPath,
+        fullPage: false,
+        timeout: 5000,
+      });
     } catch { /* ignore */ }
-
-    const video = page.video();
-    if (video) {
-      fs.mkdirSync(VIDEOS_DIR, { recursive: true });
-      const videoTarget = path.join(VIDEOS_DIR, `REC-${tc}-${ts}.webm`);
-      try {
-        await video.saveAs(videoTarget);
-      } catch { /* ignore */ }
-    }
   },
 });
 

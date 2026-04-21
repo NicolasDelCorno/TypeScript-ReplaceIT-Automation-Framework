@@ -33,17 +33,51 @@ export class ServicesPage extends BasePage {
     const links: WebdriverIO.Element[] = [];
     const seenLinkKeys = new Set<string>();
 
+    const viewportHeight = (await browser.execute(() => window.innerHeight)) as number;
+    const waitForScrollSettle = async (targetY: number): Promise<void> => {
+      // iOS Safari doesn't always land on the exact scrollY requested (rubber banding,
+      // dynamic toolbars). Consider the scroll "settled" if we're close enough or if
+      // the scroll position stabilizes.
+      let lastY: number | null = null;
+      let stableTicks = 0;
+      await browser.waitUntil(
+        async () => {
+          const y = (await browser.execute(() => window.scrollY)) as number;
+          if (lastY !== null && Math.abs(y - lastY) < 2) stableTicks++;
+          else stableTicks = 0;
+          lastY = y;
+          return Math.abs(y - targetY) < 32 || stableTicks >= 3;
+        },
+        { timeout: 8000, interval: 120 }
+      );
+    };
+
+    const scrollToY = async (y: number): Promise<void> => {
+      await browser.execute((yy: number) => window.scrollTo(0, yy), y);
+      await waitForScrollSettle(y);
+      await browser.pause(150);
+    };
+
+    const getTotalHeight = async (): Promise<number> =>
+      (await browser.execute(
+        () => Math.max(document.body.scrollHeight, document.documentElement.scrollHeight)
+      )) as number;
+
     let totalHeight = (await browser.execute(
       () => Math.max(document.body.scrollHeight, document.documentElement.scrollHeight)
     )) as number;
-    const step = 400;
+    // Use large steps initially, then smaller steps near bottom to ensure the
+    // last card becomes fully visible (important for iOS lazy-render triggers).
+    const coarseStep = Math.max(320, Math.floor(viewportHeight * 0.75));
+    const fineStep = 120;
     let pos = 0;
     let noNewCount = 0;
     let prevHeadingCount = 0;
 
-    while (pos <= totalHeight + 2 * step) {
-      await browser.execute((y: number) => window.scrollTo(0, y), pos);
-      await browser.pause(300);
+    // Scroll until we've likely reached the bottom; avoid early breaks as
+    // service cards can lazy-render after a few scrolls.
+    while (pos <= totalHeight + 2 * coarseStep) {
+      await scrollToY(pos);
 
       const h3s = (await $$('h3')) as unknown as WebdriverIO.Element[];
       for (const el of h3s) {
@@ -71,17 +105,26 @@ export class ServicesPage extends BasePage {
         }
       }
 
-      if (headings.size === prevHeadingCount) {
-        noNewCount++;
-        if (noNewCount >= 3) break;
-      } else {
-        noNewCount = 0;
-      }
+      if (headings.size === prevHeadingCount) noNewCount++;
+      else noNewCount = 0;
       prevHeadingCount = headings.size;
-      pos += step;
-      totalHeight = (await browser.execute(
-        () => Math.max(document.body.scrollHeight, document.documentElement.scrollHeight)
-      )) as number;
+      const nearBottomNow = pos >= Math.max(0, totalHeight - 2 * viewportHeight);
+      pos += nearBottomNow ? fineStep : coarseStep;
+      totalHeight = await getTotalHeight();
+
+      const nearBottom = pos >= Math.max(0, totalHeight - viewportHeight);
+      if (nearBottom) {
+        // Nudge a few times around the bottom to trigger lazy-render / IO callbacks.
+        // This is intentionally small to avoid iOS "rubber band" overscroll.
+        await scrollToY(Math.max(0, totalHeight - viewportHeight));
+        await browser.execute((dy: number) => window.scrollBy(0, dy), fineStep);
+        await browser.pause(150);
+        await browser.execute((dy: number) => window.scrollBy(0, dy), -fineStep);
+        await browser.pause(150);
+        totalHeight = await getTotalHeight();
+      }
+
+      if (nearBottom && noNewCount >= 6) break;
     }
 
     return { headings, links };
@@ -98,16 +141,41 @@ export class ServicesPage extends BasePage {
   }
 
   async clickApplyNow(index = 0): Promise<void> {
-    let totalHeight = (await browser.execute(
-      () => Math.max(document.body.scrollHeight, document.documentElement.scrollHeight)
-    )) as number;
-    const step = 400;
+    const viewportHeight = (await browser.execute(() => window.innerHeight)) as number;
+    const waitForScrollSettle = async (targetY: number): Promise<void> => {
+      let lastY: number | null = null;
+      let stableTicks = 0;
+      await browser.waitUntil(
+        async () => {
+          const y = (await browser.execute(() => window.scrollY)) as number;
+          if (lastY !== null && Math.abs(y - lastY) < 2) stableTicks++;
+          else stableTicks = 0;
+          lastY = y;
+          return Math.abs(y - targetY) < 32 || stableTicks >= 3;
+        },
+        { timeout: 8000, interval: 120 }
+      );
+    };
+
+    const scrollToY = async (y: number): Promise<void> => {
+      await browser.execute((yy: number) => window.scrollTo(0, yy), y);
+      await waitForScrollSettle(y);
+      await browser.pause(150);
+    };
+
+    const getTotalHeight = async (): Promise<number> =>
+      (await browser.execute(
+        () => Math.max(document.body.scrollHeight, document.documentElement.scrollHeight)
+      )) as number;
+
+    let totalHeight = await getTotalHeight();
+    const coarseStep = Math.max(320, Math.floor(viewportHeight * 0.75));
+    const fineStep = 120;
     let pos = 0;
     let count = 0;
 
-    while (pos <= totalHeight + 2 * step) {
-      await browser.execute((y: number) => window.scrollTo(0, y), pos);
-      await browser.pause(300);
+    while (pos <= totalHeight + 2 * coarseStep) {
+      await scrollToY(pos);
 
       const applyLinks = (await $$("a[href='/contacto']")) as unknown as WebdriverIO.Element[];
       for (const el of applyLinks) {
@@ -121,10 +189,9 @@ export class ServicesPage extends BasePage {
         }
       }
 
-      pos += step;
-      totalHeight = (await browser.execute(
-        () => Math.max(document.body.scrollHeight, document.documentElement.scrollHeight)
-      )) as number;
+      const nearBottomNow = pos >= Math.max(0, totalHeight - 2 * viewportHeight);
+      pos += nearBottomNow ? fineStep : coarseStep;
+      totalHeight = await getTotalHeight();
     }
 
     throw new Error(`Apply now link at index ${index} not found`);

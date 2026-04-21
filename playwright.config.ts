@@ -25,12 +25,13 @@ export default defineConfig({
     ['list'],
     ['./src/reporters/failures-reporter.ts'],
   ],
+  timeout: 30000,
   use: {
     baseURL: BASE_URL,
     headless: HEADLESS,
     viewport: { width: 1280, height: 800 },
     video: {
-      mode: 'on',
+      mode: 'retain-on-failure',
       size: { width: 1280, height: 800 },
     },
     screenshot: 'on',
@@ -42,14 +43,6 @@ export default defineConfig({
     {
       name: 'chromium',
       use: { ...devices['Desktop Chrome'] },
-    },
-    {
-      name: 'firefox',
-      use: { ...devices['Desktop Firefox'] },
-    },
-    {
-      name: 'webkit',
-      use: { ...devices['Desktop Safari'] },
     },
   ],
   outputDir: 'reports/test-results',

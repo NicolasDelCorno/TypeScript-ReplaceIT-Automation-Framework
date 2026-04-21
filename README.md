@@ -109,10 +109,10 @@ cp .env.example .env
 ### Web (Playwright)
 
 ```bash
-# All web tests — all browsers (headed)
+# All web tests — Chromium only (headed)
 npm run test:web:headed
 
-# All web tests — all browsers (headless)
+# All web tests — Chromium only (headless)
 npm run test:web
 
 # CI mode — Chromium only
@@ -121,10 +121,8 @@ npm run test:web:ci
 # Single file
 npx playwright test tests/contact.spec.ts
 
-# Cross-browser smoke
+# Chromium smoke
 npx playwright test tests/quality-gates.spec.ts --project=chromium
-npx playwright test tests/quality-gates.spec.ts --project=firefox
-npx playwright test tests/quality-gates.spec.ts --project=webkit
 ```
 
 ### Mobile (WebdriverIO + Appium)
