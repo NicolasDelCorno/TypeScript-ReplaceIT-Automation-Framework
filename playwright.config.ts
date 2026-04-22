@@ -4,10 +4,9 @@ import * as path from 'path';
 
 dotenv.config({ path: path.resolve(__dirname, '.env') });
 
-const timestamp = new Date().toISOString().replace(/[-:.TZ]/g, '').slice(0, 14);
 const BASE_URL = (process.env.BASE_URL ?? 'https://replaceit.ai').replace(/\/$/, '');
-const HEADLESS = ['1', 'true', 'yes', 'y'].includes(
-  (process.env.HEADLESS ?? 'false').trim().toLowerCase()
+const HEADLESS = !['0', 'false', 'no', 'n'].includes(
+  (process.env.HEADLESS ?? 'true').trim().toLowerCase()
 );
 
 export default defineConfig({
@@ -17,11 +16,7 @@ export default defineConfig({
   retries: 0,
   workers: 1,
   reporter: [
-    ['html', {
-      outputFolder: 'reports/Web',
-      fileName: `Report-Web-${timestamp}.html`,
-      open: 'never',
-    }],
+    ['./src/reporters/html-reporter.ts'],
     ['list'],
     ['./src/reporters/failures-reporter.ts'],
   ],

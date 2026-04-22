@@ -24,15 +24,20 @@ interface FailureEntry {
   headless: boolean;
 }
 
-interface FailuresPayload {
-  schema_version: 1;
-  suite: 'web';
+interface WebSection {
   run_started_at: string;
   exitstatus: number;
   base_url: string;
   pw_browser: string;
   headless: boolean;
   failures: FailureEntry[];
+}
+
+interface FailuresFile {
+  schema_version: 2;
+  web?: WebSection;
+  ios?: Record<string, unknown>;
+  android?: Record<string, unknown>;
 }
 
 const BASE_URL = (process.env.BASE_URL ?? 'https://replaceit.ai').replace(/\/$/, '');
@@ -82,9 +87,7 @@ export default class FailuresReporter implements Reporter {
       interrupted: 130,
     };
 
-    const payload: FailuresPayload = {
-      schema_version: 1,
-      suite: 'web',
+    const webSection: WebSection = {
       run_started_at: this.runStartedAt,
       exitstatus: exitStatusMap[result.status] ?? 1,
       base_url: BASE_URL,
@@ -95,6 +98,13 @@ export default class FailuresReporter implements Reporter {
 
     try {
       const outputPath = path.resolve(__dirname, '../../failures.json');
+      let existing: Omit<FailuresFile, 'schema_version' | 'web'> = {};
+      try {
+        const raw = JSON.parse(fs.readFileSync(outputPath, 'utf-8')) as FailuresFile;
+        if (raw?.schema_version === 2) existing = raw;
+      } catch { /* first run or corrupt — start fresh */ }
+
+      const payload: FailuresFile = { ...existing, schema_version: 2, web: webSection };
       fs.writeFileSync(outputPath, JSON.stringify(payload, null, 2), 'utf-8');
     } catch { /* ignore */ }
   }

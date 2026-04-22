@@ -14,8 +14,59 @@ const PLATFORM_LABEL = PLATFORM === 'ios' ? 'iOS' : 'Android';
 const timestamp = new Date().toISOString().replace(/[-:.TZ]/g, '').slice(0, 14);
 const reportsDir = path.resolve(__dirname, `../reports/${PLATFORM_LABEL}`);
 const screenshotsDir = path.resolve(__dirname, `../reports/screenshots/${PLATFORM}`);
+const allResultsJsonPath = path.join(reportsDir, '.run-results.json');
 fs.mkdirSync(reportsDir, { recursive: true });
 fs.mkdirSync(screenshotsDir, { recursive: true });
+
+const MOBILE_TC_MAP: Record<string, string> = {
+  // 1. Navigation
+  'navigation.spec.ts > TestNavigation > test_nav_home_link':                       'TC1-1',
+  'navigation.spec.ts > TestNavigation > test_nav_services_link':                   'TC1-2',
+  'navigation.spec.ts > TestNavigation > test_nav_about_link':                      'TC1-3',
+  'navigation.spec.ts > TestNavigation > test_nav_contact_link':                    'TC1-4',
+  'navigation.spec.ts > TestNavigation > test_logo_navigates_home':                 'TC1-5',
+  'navigation.spec.ts > TestNavigation > test_all_pages_load[/]':                   'TC1-6',
+  'navigation.spec.ts > TestNavigation > test_all_pages_load[/servicios]':          'TC1-7',
+  'navigation.spec.ts > TestNavigation > test_all_pages_load[/quienes-somos]':      'TC1-8',
+  'navigation.spec.ts > TestNavigation > test_all_pages_load[/contacto]':           'TC1-9',
+  // 2. Home
+  'home.spec.ts > TestHomePage > test_hero_heading_visible':                         'TC2-1',
+  'home.spec.ts > TestHomePage > test_clients_section_visible':                      'TC2-2',
+  'home.spec.ts > TestHomePage > test_results_section_visible':                      'TC2-3',
+  'home.spec.ts > TestHomePage > test_engagement_section_visible':                   'TC2-4',
+  'home.spec.ts > TestHomePage > test_view_services_cta_navigates':                  'TC2-5',
+  // 3. Services
+  'services.spec.ts > TestServicesPage > test_hero_heading_visible':                 'TC3-1',
+  'services.spec.ts > TestServicesPage > test_all_service_cards_present':            'TC3-2',
+  'services.spec.ts > TestServicesPage > test_service_card_count':                   'TC3-3',
+  'services.spec.ts > TestServicesPage > test_apply_now_navigates_to_contact[0]':   'TC3-4',
+  'services.spec.ts > TestServicesPage > test_apply_now_navigates_to_contact[1]':   'TC3-5',
+  'services.spec.ts > TestServicesPage > test_apply_now_navigates_to_contact[2]':   'TC3-6',
+  'services.spec.ts > TestServicesPage > test_apply_now_navigates_to_contact[3]':   'TC3-7',
+  'services.spec.ts > TestServicesPage > test_apply_now_navigates_to_contact[4]':   'TC3-8',
+  'services.spec.ts > TestServicesPage > test_apply_now_navigates_to_contact[5]':   'TC3-9',
+  'services.spec.ts > TestServicesPage > test_apply_now_navigates_to_contact[6]':   'TC3-10',
+  'services.spec.ts > TestServicesPage > test_apply_now_navigates_to_contact[7]':   'TC3-11',
+  // 4. About
+  'about.spec.ts > TestAboutPage > test_hero_heading_visible':                       'TC4-1',
+  'about.spec.ts > TestAboutPage > test_gallery_section_visible':                    'TC4-2',
+  // 5. Contact
+  'contact.spec.ts > TestContactPage > test_hero_heading_visible':                   'TC5-1',
+  'contact.spec.ts > TestContactPage > test_form_fields_present':                    'TC5-2',
+  'contact.spec.ts > TestContactPage > test_send_button_present':                    'TC5-3',
+  'contact.spec.ts > TestContactPage > test_contact_email_link_present':             'TC5-4',
+  'contact.spec.ts > TestContactPage > test_phone_link_present':                     'TC5-5',
+  'contact.spec.ts > TestContactPage > test_submit_empty_form_stays_on_page':        'TC5-6',
+  'contact.spec.ts > TestContactPage > test_submit_with_invalid_email':              'TC5-7',
+  'contact.spec.ts > TestContactPage > test_submit_valid_form':                      'TC5-8',
+  // 6. Footer
+  'footer.spec.ts > TestFooter > test_privacy_policy_link_works':                    'TC6-1',
+  'footer.spec.ts > TestFooter > test_cookie_policy_link_works':                     'TC6-2',
+  'footer.spec.ts > TestFooter > test_terms_and_conditions_link_works':              'TC6-3',
+  'footer.spec.ts > TestFooter > test_social_links_present_in_footer[instagram]':   'TC6-4',
+  'footer.spec.ts > TestFooter > test_social_links_present_in_footer[facebook]':    'TC6-5',
+  'footer.spec.ts > TestFooter > test_social_links_present_in_footer[linkedin]':    'TC6-6',
+};
 
 // Ensure failure collection exists even if the session never starts
 // (e.g. chromedriver mismatch during session creation).
@@ -130,6 +181,16 @@ export const config: Record<string, any> = {
     (global as Record<string, unknown>).__mobileScreenshotsDir = screenshotsDir;
   },
 
+  // Persist all results to disk so onComplete (main process) can read them.
+  // Worker globals are not shared with the launcher process.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  _flushAllResultsSnapshot() {
+    try {
+      const results = ((global as Record<string, unknown>).__mobileAllResults as TestResult[]) ?? [];
+      fs.writeFileSync(allResultsJsonPath, JSON.stringify(results, null, 2), 'utf-8');
+    } catch { /* ignore */ }
+  },
+
   // Best-effort writer so we still get failures.json even if the run aborts early
   // or crashes before onComplete. We intentionally swallow any FS errors to avoid
   // masking the real test failure.
@@ -137,16 +198,19 @@ export const config: Record<string, any> = {
   _flushFailuresSnapshot(resultsFailed?: number) {
     try {
       const mobileFailures = ((global as Record<string, unknown>).__mobileFailures as unknown[]) ?? [];
-      const payload = {
-        schema_version: 1,
-        suite: 'mobile',
+      const platformSection = {
         run_started_at: timestamp,
         exitstatus: (resultsFailed ?? 0) > 0 ? 1 : 0,
         base_url: BASE_URL,
-        platform: PLATFORM,
-        failures: mobileFailures ?? [],
+        failures: mobileFailures,
       };
       const outputPath = path.resolve(__dirname, '../failures.json');
+      let existing: Record<string, unknown> = {};
+      try {
+        const raw = JSON.parse(fs.readFileSync(outputPath, 'utf-8')) as Record<string, unknown>;
+        if (raw?.schema_version === 2) existing = raw;
+      } catch { /* first run or corrupt — start fresh */ }
+      const payload = { ...existing, schema_version: 2, [PLATFORM]: platformSection };
       fs.writeFileSync(outputPath, JSON.stringify(payload, null, 2), 'utf-8');
     } catch { /* ignore */ }
   },
@@ -156,13 +220,15 @@ export const config: Record<string, any> = {
     const mobileFailures = (global as Record<string, unknown>).__mobileFailures as Array<Record<string, unknown>>;
     const mobileAllResults = (global as Record<string, unknown>).__mobileAllResults as TestResult[];
     const ts = new Date().toISOString().replace(/[-:.TZ]/g, '').slice(0, 14);
-    const screenshotPath = path.join(screenshotsDir, `PIC-TCx-${ts}.png`);
 
     const testId = [
       path.basename((test.file as string) ?? ''),
       test.parent,
       test.title,
     ].filter(Boolean).join(' > ');
+
+    const tc = MOBILE_TC_MAP[testId] ?? 'TCx';
+    const screenshotPath = path.join(screenshotsDir, `PIC-${tc}-${ts}.png`);
 
     mobileAllResults.push({
       testId,
@@ -194,6 +260,9 @@ export const config: Record<string, any> = {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (globalThis as any).browser?.saveScreenshot(screenshotPath);
     } catch { /* ignore */ }
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (config as any)._flushAllResultsSnapshot?.();
   },
 
   // Capture hook failures (e.g. "before each" hook) which do not consistently
@@ -268,7 +337,11 @@ export const config: Record<string, any> = {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (config as any)._flushFailuresSnapshot?.(results.failed);
 
-    const mobileAllResults = (((global as Record<string, unknown>).__mobileAllResults as TestResult[]) ?? []);
+    let mobileAllResults: TestResult[] = [];
+    try {
+      mobileAllResults = JSON.parse(fs.readFileSync(allResultsJsonPath, 'utf-8')) as TestResult[];
+    } catch { /* ignore — no results file means 0 tests ran */ }
+
     const reportPath = path.join(reportsDir, `Report-${PLATFORM_LABEL}-${timestamp}.html`);
     try {
       generateHtmlReport(mobileAllResults, reportPath, PLATFORM_LABEL);

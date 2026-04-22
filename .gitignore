@@ -17,6 +17,9 @@ dist/
 # Claude Code
 .claude/
 
+# JetBrains IDEs (IntelliJ, WebStorm, Android Studio)
+.idea/
+
 # Personal notes
 notes/
 
