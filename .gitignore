@@ -29,3 +29,6 @@ reports/
 
 # Failure log
 failures.json
+
+#Detailed project scructure
+folder-file-tree.md 
