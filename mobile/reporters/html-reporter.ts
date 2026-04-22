@@ -65,18 +65,18 @@ export function generateHtmlReport(
     <meta charset="utf-8"/>
     <title>${title}</title>
     <style>
-body { font-family: Helvetica, Arial, sans-serif; font-size: 12px; min-width: 800px; color: #999; }
-h1 { font-size: 24px; color: black; }
-h2 { font-size: 16px; color: black; }
-p { color: black; }
-a { color: #999; }
+body { font-family: Helvetica, Arial, sans-serif; font-size: 12px; min-width: 800px; background-color: #1e1e1e; color: #b0b0b0; }
+h1 { font-size: 24px; color: #e8e8e8; }
+h2 { font-size: 16px; color: #e8e8e8; }
+p { color: #cccccc; }
+a { color: #7cb9e8; }
 table { border-collapse: collapse; width: 100%; }
-th, td { padding: 5px; border: 1px solid #e6e6e6; text-align: left; font-size: 12px; }
-th { font-weight: bold; }
-#results-table { border: 1px solid #e6e6e6; color: #999; }
-.passed .col-result, span.passed { color: green; }
-.failed .col-result, span.failed { color: red; }
-.log { background-color: #e6e6e6; font-family: "Courier New", Courier, monospace; padding: 5px; white-space: pre-wrap; color: black; display: block; margin-top: 4px; }
+th, td { padding: 5px; border: 1px solid #383838; text-align: left; font-size: 12px; }
+th { font-weight: bold; background-color: #2a2a2a; color: #e8e8e8; }
+#results-table { border: 1px solid #383838; color: #b0b0b0; }
+.passed .col-result, span.passed { color: #4ec94e; }
+.failed .col-result, span.failed { color: #ff6b6b; }
+.log { background-color: #2a2a2a; font-family: "Courier New", Courier, monospace; padding: 5px; white-space: pre-wrap; color: #cccccc; display: block; margin-top: 4px; }
 .col-result { width: 130px; }
     </style>
   </head>
