@@ -2,6 +2,8 @@ import type { Options } from '@wdio/types';
 import * as path from 'path';
 import * as fs from 'fs';
 import * as dotenv from 'dotenv';
+import { generateHtmlReport } from './reporters/html-reporter';
+import type { TestResult } from './reporters/html-reporter';
 
 dotenv.config({ path: path.resolve(__dirname, '../.env') });
 
@@ -121,6 +123,7 @@ export const config: Record<string, any> = {
 
   before() {
     (global as Record<string, unknown>).__mobileFailures = [];
+    (global as Record<string, unknown>).__mobileAllResults = [];
     (global as Record<string, unknown>).__mobileBaseUrl = BASE_URL;
     (global as Record<string, unknown>).__mobilePlatform = PLATFORM;
     (global as Record<string, unknown>).__mobileTimestamp = timestamp;
@@ -149,10 +152,24 @@ export const config: Record<string, any> = {
   },
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  afterTest(_test: any, _context: any, { error }: { error?: Error }) {
+  afterTest(test: any, _context: any, { error, duration }: { error?: Error; duration?: number }) {
     const mobileFailures = (global as Record<string, unknown>).__mobileFailures as Array<Record<string, unknown>>;
+    const mobileAllResults = (global as Record<string, unknown>).__mobileAllResults as TestResult[];
     const ts = new Date().toISOString().replace(/[-:.TZ]/g, '').slice(0, 14);
     const screenshotPath = path.join(screenshotsDir, `PIC-TCx-${ts}.png`);
+
+    const testId = [
+      path.basename((test.file as string) ?? ''),
+      test.parent,
+      test.title,
+    ].filter(Boolean).join(' > ');
+
+    mobileAllResults.push({
+      testId,
+      result: error ? 'failed' : 'passed',
+      duration: duration ?? 0,
+      error: error ? (error.stack ?? error.message) : undefined,
+    });
 
     if (error) {
       mobileFailures.push({
@@ -250,5 +267,11 @@ export const config: Record<string, any> = {
   onComplete(_exitCode: number, _config: Options.Testrunner, _capabilities: unknown, results: { failed: number }) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (config as any)._flushFailuresSnapshot?.(results.failed);
+
+    const mobileAllResults = (((global as Record<string, unknown>).__mobileAllResults as TestResult[]) ?? []);
+    const reportPath = path.join(reportsDir, `Report-${PLATFORM_LABEL}-${timestamp}.html`);
+    try {
+      generateHtmlReport(mobileAllResults, reportPath, PLATFORM_LABEL);
+    } catch { /* ignore */ }
   },
 };

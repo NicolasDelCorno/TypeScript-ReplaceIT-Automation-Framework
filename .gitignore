@@ -18,7 +18,7 @@ dist/
 .claude/
 
 # Personal notes
-Notes/
+notes/
 
 # Playwright
 playwright-report/
