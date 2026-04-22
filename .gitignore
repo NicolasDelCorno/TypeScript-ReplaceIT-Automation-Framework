@@ -19,7 +19,6 @@ dist/
 
 # Personal notes
 Notes/
-TEST_CASES.md
 
 # Playwright
 playwright-report/
@@ -30,4 +29,3 @@ reports/
 
 # Failure log
 failures.json
-
