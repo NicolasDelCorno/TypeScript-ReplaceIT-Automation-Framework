@@ -19,6 +19,7 @@ export default defineConfig({
     ['./src/reporters/html-reporter.ts'],
     ['list'],
     ['./src/reporters/failures-reporter.ts'],
+    ['allure-playwright', { detail: true }],
   ],
   timeout: 30000,
   use: {

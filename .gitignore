@@ -27,6 +27,9 @@ notes/
 playwright-report/
 test-results/
 
+# Allure (Playwright default output folder)
+allure-results/
+
 # Generated test artifacts (screenshots, videos, HTML reports)
 reports/
 

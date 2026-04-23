@@ -2,6 +2,7 @@ import type { Options } from '@wdio/types';
 import * as path from 'path';
 import * as fs from 'fs';
 import * as dotenv from 'dotenv';
+import allureReporter from '@wdio/allure-reporter';
 import { generateHtmlReport } from './reporters/html-reporter';
 import type { TestResult } from './reporters/html-reporter';
 
@@ -14,9 +15,11 @@ const PLATFORM_LABEL = PLATFORM === 'ios' ? 'iOS' : 'Android';
 const timestamp = new Date().toISOString().replace(/[-:.TZ]/g, '').slice(0, 14);
 const reportsDir = path.resolve(__dirname, `../reports/${PLATFORM_LABEL}`);
 const screenshotsDir = path.resolve(__dirname, `../reports/screenshots/${PLATFORM}`);
+const allureResultsDir = path.resolve(__dirname, `../reports/allure-results/mobile/${PLATFORM}`);
 const allResultsJsonPath = path.join(reportsDir, '.run-results.json');
 fs.mkdirSync(reportsDir, { recursive: true });
 fs.mkdirSync(screenshotsDir, { recursive: true });
+fs.mkdirSync(allureResultsDir, { recursive: true });
 
 const MOBILE_TC_MAP: Record<string, string> = {
   // 1. Navigation
@@ -165,7 +168,10 @@ export const config: Record<string, any> = {
   ],
 
   framework: 'mocha',
-  reporters: ['spec'],
+  reporters: [
+    'spec',
+    ['allure', { outputDir: allureResultsDir }],
+  ],
 
   mochaOpts: {
     ui: 'bdd',
@@ -259,6 +265,15 @@ export const config: Record<string, any> = {
       // browser global is available at runtime via WDIO
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (globalThis as any).browser?.saveScreenshot(screenshotPath);
+      if (error) {
+        try {
+          allureReporter.addAttachment(
+            'screenshot',
+            fs.readFileSync(screenshotPath),
+            'image/png',
+          );
+        } catch { /* ignore */ }
+      }
     } catch { /* ignore */ }
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -289,6 +304,13 @@ export const config: Record<string, any> = {
     try {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (globalThis as any).browser?.saveScreenshot(screenshotPath);
+      try {
+        allureReporter.addAttachment(
+          'screenshot',
+          fs.readFileSync(screenshotPath),
+          'image/png',
+        );
+      } catch { /* ignore */ }
     } catch { /* ignore */ }
   },
 
